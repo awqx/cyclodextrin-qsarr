@@ -310,10 +310,10 @@ data_name <- str_remove(list.files("desc/cdk"), "\\.RDS$")
 ```
 
 ```{r, echo = F}
-predict.tune <- function(tune_obj, ...) 
-{
-  predict(tune_obj$model, ...)
-}
+# predict.tune <- function(tune_obj, ...) 
+# {
+#   predict(tune_obj$model, ...)
+# }
 ```
 
 
