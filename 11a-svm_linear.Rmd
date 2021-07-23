@@ -559,13 +559,13 @@ svm_linear_rfe_df <- rbindlist(
   )
 ) 
 
-saveRDS(svm_linear_allvar_df, "result/trn/all_var/rf.RDS")
-saveRDS(svm_linear_rfe_df, "result/trn/rfe_var/rf.RDS")
+saveRDS(svm_linear_allvar_df, "result/trn/all_var/svm_linear.RDS")
+saveRDS(svm_linear_rfe_df, "result/trn/rfe_var/svm_linear.RDS")
 ```
 
 ```{r, eval = T, echo = F}
-svm_linear_allvar_df <- readRDS("result/trn/all_var/rf.RDS")
-svm_linear_rfe_df <- readRDS("result/trn/rfe_var/rf.RDS")
+svm_linear_allvar_df <- readRDS("result/trn/all_var/svm_linear.RDS")
+svm_linear_rfe_df <- readRDS("result/trn/rfe_var/svm_linear.RDS")
 
 ggplot(svm_linear_allvar_df, aes(x = data_src, y = fold_avg, fill = desc_src)) + 
   geom_col(position = "dodge") + 
