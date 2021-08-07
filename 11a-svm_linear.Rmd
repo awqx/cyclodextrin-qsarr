@@ -23,8 +23,8 @@ knitr::opts_chunk$set(echo = TRUE, eval = F)
 
 ## Overview
 
-Models built on all predictor variables will be saved in `model/svm/all_var/`. 
-Models trained on variables selected from RFE in 09 will be saved in `model/svm/rfe_var`. 
+Models built on all predictor variables will be saved in `model/svm_linear/all_var/`. 
+Models trained on variables selected from RFE in 09 will be saved in `model/svm_linear/rfe_var`. 
 
 ```{r directories}
 desc_src <- c("cdk", "mordred", "ochem", "padel")
@@ -52,19 +52,16 @@ library(pacman)
 p_load(
   caret,
   data.table,
+  doParallel,
   dplyr, 
   ggplot2, 
+  parallel,
   qsarr,
   stringr, 
   tidyr
 )
 theme_set(theme_bw())
 knitr::opts_chunk$set(echo = TRUE, eval = F)
-
-library(qsarr)
-library(parallel)
-library(doParallel)
-# theme_set(theme_bw())
 ```
 
 ## All variables

@@ -1,0 +1,877 @@
+---
+title: "11. SVM"
+author: "Al Xin"
+date: "1/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = F)
+library(pacman)
+p_load(
+  caret,
+  data.table,
+  doParallel, 
+  dplyr, 
+  ggplot2, 
+  parallel, 
+  qsarr,
+  stringr, 
+  tidyr
+)
+theme_set(theme_bw())
+knitr::opts_chunk$set(echo = TRUE, eval = F)
+```
+
+## Overview
+
+Models built on all predictor variables will be saved in `model/svm_polynomial/all_var/`. 
+Models trained on variables selected from RFE in 09 will be saved in `model/svm_polynomial/rfe_var`. 
+
+```{r directories}
+desc_src <- c("cdk", "mordred", "ochem", "padel")
+
+if (!dir.exists("model")) dir.create("model")
+if (!dir.exists("model/svm_polynomial")) {
+  dir.create("model/svm_polynomial")
+  dir.create("model/svm_polynomial/all_var")
+  dir.create("model/svm_polynomial/rfe_var")
+  dir_create_result <- sapply(paste0("model/svm_polynomial/all_var/", desc_src), dir.create)
+  dir_create_result <- sapply(paste0("model/svm_polynomial/rfe_var/", desc_src), dir.create)
+}
+```
+
+### General outline for model building
+
+## All variables
+
+For creating models with all the variables, the descriptors are read as separate 
+lists. This makes it clearer that different possible tuning parameters are used
+based on the number of descriptors available. 
+
+```{r cdk_all}
+# Read preprocessed descriptors
+# Remove guest names for training
+cdk_list <- read_desc_list(
+  list.files("preprocess/cdk", full.names = T), 
+  quiet = T
+)
+
+padel_list <- read_desc_list(
+  list.files("preprocess/padel", full.names = T), 
+  quiet = T
+)
+
+mordred_list <- read_desc_list(
+  list.files("preprocess/mordred", full.names = T), 
+  quiet = T
+)
+
+ochem_list <- read_desc_list(
+  list.files("preprocess/ochem", full.names = T), 
+  quiet = T
+) 
+
+data_name <- names(cdk_list)
+```
+
+## Polynomial SVM
+
+Because the SVM kernels all have slightly different parameters, `qsarr` handles each kernel through a different `tune` call. It is more straightforward to feed the `tune` function the parameters relevant to each kernel rather than check dependencies on the kernel type. 
+
+This may change in later versions of `qsarr` but is true for v0.1.0.
+
+An SVM with a polynomial kernel draws a linear boundary to explain the data. 
+
+### All Variables
+
+```{r, eval = F}
+num_core <- max(1, detectCores() - 1)
+cl <- makeCluster(num_core)
+registerDoParallel(cl)
+cl_lib <- clusterEvalQ(cl, library("qsarr"))
+
+# clusterSetRNGStream(cl = cl, 20210723)
+# cdk_all <- parLapply(
+#   cl = cl,
+#   cdk_list, 
+#   tune, 
+#   method = "svm_polynomial", 
+#   resp = "dG",
+#   ignore_col = "guest",
+#   nfold = 10,
+#   nrep = 10,
+#   degree = c(1:5),
+#   coef0 = c(-10, -1, 0, 1, 10),
+#   cost = c(0.5, 1, 3, 10, 20), 
+#   epsilon = c(0.01, 0.1, 0.5, 0.9), 
+#   gamma = c(0.001, 0.01, 0.1, 0.25, 0.5)
+# )
+# 
+# cdk_all_save <- lapply(
+#   data_name, 
+#   function(x) {
+#     saveRDS(cdk_all[[x]], paste0("model/svm_polynomial/all_var/cdk/", x, ".RDS"))
+#   }
+# )
+
+clusterSetRNGStream(cl = cl, 20210723)
+padel_all <- parLapply(
+  cl = cl,
+  padel_list, 
+  tune, 
+  method = "svm_polynomial", 
+  resp = "dG",
+  ignore_col = "guest",
+  nfold = 10,
+  nrep = 10,
+  degree = c(1:5),
+  coef0 = c(-10, -1, 0, 1, 10),
+  cost = c(0.5, 1, 3, 10, 20), 
+  epsilon = c(0.01, 0.1, 0.5, 0.9), 
+  gamma = c(0.001, 0.01, 0.1, 0.25, 0.5)
+)
+
+padel_all_save <- lapply(
+  data_name, 
+  function(x) {
+    saveRDS(padel_all[[x]], paste0("model/svm_polynomial/all_var/padel/", x, ".RDS"))
+  }
+)
+
+clusterSetRNGStream(cl = cl, 20210723)
+mordred_all <- parLapply(
+  cl = cl,
+  mordred_list, 
+  tune, 
+  method = "svm_polynomial", 
+  resp = "dG",
+  ignore_col = "guest",
+  nfold = 10,
+  nrep = 10,
+  degree = c(1:5),
+  coef0 = c(-10, -1, 0, 1, 10),
+  cost = c(0.5, 1, 3, 10, 20), 
+  epsilon = c(0.01, 0.1, 0.5, 0.9), 
+  gamma = c(0.001, 0.01, 0.1, 0.25, 0.5)
+)
+
+mordred_all_save <- lapply(
+  data_name, 
+  function(x) {
+    saveRDS(mordred_all[[x]], paste0("model/svm_polynomial/all_var/mordred/", x, ".RDS"))
+  }
+)
+
+clusterSetRNGStream(cl = cl, 20210723)
+ochem_all <- parLapply(
+  cl = cl,
+  ochem_list, 
+  tune, 
+  method = "svm_polynomial", 
+  resp = "dG",
+  ignore_col = "guest",
+  nfold = 10,
+  nrep = 10,
+  degree = c(1:5),
+  coef0 = c(-10, -1, 0, 1, 10),
+  cost = c(0.5, 1, 3, 10, 20), 
+  epsilon = c(0.01, 0.1, 0.5, 0.9), 
+  gamma = c(0.001, 0.01, 0.1, 0.25, 0.5)
+)
+
+ochem_all_save <- lapply(
+  data_name, 
+  function(x) {
+    saveRDS(ochem_all[[x]], paste0("model/svm_polynomial/all_var/ochem/", x, ".RDS"))
+  }
+)
+stopCluster(cl = cl)
+```
+
+#### RFE
+
+```{r rfe}
+# Read preprocessed descriptors
+# Remove guest names for training
+cdk_list_rfe <- read_desc_list(
+  list.files("rfe/df/cdk", full.names = T), 
+  quiet = T
+)
+
+padel_list_rfe <- read_desc_list(
+  list.files("rfe/df/padel", full.names = T), 
+  quiet = T
+)
+
+mordred_list_rfe <- read_desc_list(
+  list.files("rfe/df/mordred", full.names = T), 
+  quiet = T
+)
+
+ochem_list_rfe <- read_desc_list(
+  list.files("rfe/df/ochem", full.names = T), 
+  quiet = T
+) 
+
+data_name <- names(cdk_list_rfe)
+```
+
+```{r}
+# Parallel processing setup
+num_core <- max(1, detectCores() - 1)
+cl <- makeCluster(num_core)
+registerDoParallel(cl)
+cl_lib <- clusterEvalQ(cl, library("qsarr"))
+
+clusterSetRNGStream(cl = cl, 20210722)
+cdk_rfe <- parLapply(
+  cl = cl,
+  cdk_list_rfe,
+  tune, 
+  method = "svm_polynomial", 
+  resp = "dG",
+  ignore_col = "guest",
+  nfold = 10,
+  nrep = 10,
+  cost = c(0.5, 1, 3, 10, 20), 
+  epsilon = c(0.001, 0.01, 0.1, 0.25, 0.5, 0.9)
+)
+
+cdk_rfe_save <- lapply(
+  data_name, 
+  function(x) {
+    saveRDS(cdk_rfe[[x]], paste0("model/svm_polynomial/rfe_var/cdk/", x, ".RDS"))
+  }
+)
+
+clusterSetRNGStream(cl = cl, 20210722)
+padel_rfe <- parLapply(
+  cl = cl,
+  padel_list_rfe,
+  tune, 
+  method = "svm_polynomial", 
+  resp = "dG",
+  ignore_col = "guest",
+  nfold = 10,
+  nrep = 10,
+  cost = c(0.5, 1, 3, 10, 20), 
+  epsilon = c(0.001, 0.01, 0.1, 0.25, 0.5, 0.9)
+)
+
+padel_rfe_save <- lapply(
+  data_name, 
+  function(x) {
+    saveRDS(padel_rfe[[x]], paste0("model/svm_polynomial/rfe_var/padel/", x, ".RDS"))
+  }
+)
+
+clusterSetRNGStream(cl = cl, 20210722)
+mordred_rfe <- parLapply(
+  cl = cl,
+  mordred_list_rfe,
+  tune, 
+  method = "svm_polynomial", 
+  resp = "dG",
+  ignore_col = "guest",
+  nfold = 10,
+  nrep = 10,
+  cost = c(0.5, 1, 3, 10, 20), 
+  epsilon = c(0.001, 0.01, 0.1, 0.25, 0.5, 0.9)
+)
+
+mordred_rfe_save <- lapply(
+  data_name, 
+  function(x) {
+    saveRDS(mordred_rfe[[x]], paste0("model/svm_polynomial/rfe_var/mordred/", x, ".RDS"))
+  }
+)
+
+clusterSetRNGStream(cl = cl, 20210722)
+ochem_rfe <- parLapply(
+  cl = cl,
+  ochem_list_rfe,
+  tune, 
+  method = "svm_polynomial", 
+  resp = "dG",
+  ignore_col = "guest",
+  nfold = 10,
+  nrep = 10,
+  cost = c(0.5, 1, 3, 10, 20), 
+  epsilon = c(0.001, 0.01, 0.1, 0.25, 0.5, 0.9)
+)
+
+ochem_rfe_save <- lapply(
+  data_name, 
+  function(x) {
+    saveRDS(ochem_rfe[[x]], paste0("model/svm_polynomial/rfe_var/ochem/", x, ".RDS"))
+  }
+)
+stopCluster(cl = cl)
+```
+
+### Polynomial SVMs
+
+```{r}
+if (!dir.exists("model/svm_polynomial")) {
+  dir.create("model/svm_polynomial/all_var", recursive = T)
+  dir.create("model/svm_polynomial/rfe_var")
+  dir_create_result <- sapply(paste0("model/svm_polynomial/all_var/", desc_src), dir.create)
+  dir_create_result <- sapply(paste0("model/svm_polynomial/rfe_var/", desc_src), dir.create)
+}
+```
+
+#### All Variables
+
+```{r}
+# Rerun this each kernel because this will likely take multiple sittings
+num_core <- max(1, detectCores() - 1)
+cl <- makeCluster(num_core)
+registerDoParallel(cl)
+cl_lib <- clusterEvalQ(cl, library("qsarr"))
+
+clusterSetRNGStream(cl = cl, 20210722)
+
+cdk_all <- parLapply(
+  cl = cl,
+  cdk_list, 
+  tune, 
+  method = "svm_polynomial", 
+  resp = "dG",
+  ignore_col = "guest",
+  nfold = 10,
+  nrep = 10,
+  degree = c(1:5),
+  coef0 = c(-10, -1, 0, 1, 10),
+  cost = c(0.5, 1, 3, 10, 20), 
+  epsilon = c(0.01, 0.1, 0.5, 0.9), 
+  gamma = c(0.001, 0.01, 0.1, 0.25, 0.5)
+)
+
+cdk_all_save <- lapply(
+  data_name, 
+  function(x) {
+    saveRDS(cdk_all[[x]], paste0("model/svm_polynomial/all_var/cdk/", x, ".RDS"))
+  }
+)
+
+clusterSetRNGStream(cl = cl, 20210722)
+padel_all <- parLapply(
+  cl = cl,
+  padel_list, 
+  tune, 
+  method = "svm_polynomial", 
+  resp = "dG",
+  ignore_col = "guest",
+  nfold = 10,
+  nrep = 10,
+  degree = c(1:5),
+  coef0 = c(-10, -1, 0, 1, 10),
+  cost = c(0.5, 1, 3, 10, 20), 
+  epsilon = c(0.01, 0.1, 0.5, 0.9), 
+  gamma = c(0.001, 0.01, 0.1, 0.25, 0.5)
+)
+
+padel_all_save <- lapply(
+  data_name, 
+  function(x) {
+    saveRDS(padel_all[[x]], paste0("model/svm_polynomial/all_var/padel/", x, ".RDS"))
+  }
+)
+
+clusterSetRNGStream(cl = cl, 20210722)
+mordred_all <- parLapply(
+  cl = cl,
+  mordred_list, 
+  tune, 
+  method = "svm_polynomial", 
+  resp = "dG",
+  ignore_col = "guest",
+  nfold = 10,
+  nrep = 10,
+  degree = c(1:5),
+  coef0 = c(-10, -1, 0, 1, 10),
+  cost = c(0.5, 1, 3, 10, 20), 
+  epsilon = c(0.01, 0.1, 0.5, 0.9), 
+  gamma = c(0.001, 0.01, 0.1, 0.25, 0.5)
+)
+
+mordred_all_save <- lapply(
+  data_name, 
+  function(x) {
+    saveRDS(mordred_all[[x]], paste0("model/svm_polynomial/all_var/mordred/", x, ".RDS"))
+  }
+)
+
+clusterSetRNGStream(cl = cl, 20210722)
+ochem_all <- parLapply(
+  cl = cl,
+  ochem_list, 
+  tune, 
+  method = "svm_polynomial", 
+  resp = "dG",
+  ignore_col = "guest",
+  nfold = 10,
+  nrep = 10,
+  degree = c(1:5),
+  coef0 = c(-10, -1, 0, 1, 10),
+  cost = c(0.5, 1, 3, 10, 20), 
+  epsilon = c(0.01, 0.1, 0.5, 0.9), 
+  gamma = c(0.001, 0.01, 0.1, 0.25, 0.5)
+)
+
+ochem_all_save <- lapply(
+  data_name, 
+  function(x) {
+    saveRDS(ochem_all[[x]], paste0("model/svm_polynomial/all_var/ochem/", x, ".RDS"))
+  }
+)
+stopCluster(cl = cl)
+```
+
+#### RFE
+
+```{r}
+num_core <- max(1, detectCores() - 1)
+cl <- makeCluster(num_core)
+registerDoParallel(cl)
+cl_lib <- clusterEvalQ(cl, library("qsarr"))
+
+clusterSetRNGStream(cl = cl, 20210722)
+
+cdk_rfe <- parLapply(
+  cl = cl,
+  cdk_list_rfe, 
+  tune, 
+  method = "svm_polynomial", 
+  resp = "dG",
+  ignore_col = "guest",
+  nfold = 10,
+  nrep = 10,
+  degree = c(1:5),
+  coef0 = c(-10, -1, 0, 1, 10),
+  cost = c(0.5, 1, 3, 10, 20), 
+  epsilon = c(0.01, 0.1, 0.5, 0.9), 
+  gamma = c(0.001, 0.01, 0.1, 0.25, 0.5)
+)
+
+cdk_rfe_save <- lapply(
+  data_name, 
+  function(x) {
+    saveRDS(cdk_rfe[[x]], paste0("model/svm_polynomial/rfe_var/cdk/", x, ".RDS"))
+  }
+)
+
+clusterSetRNGStream(cl = cl, 20210722)
+padel_rfe <- parLapply(
+  cl = cl,
+  padel_list_rfe, 
+  tune, 
+  method = "svm_polynomial", 
+  resp = "dG",
+  ignore_col = "guest",
+  nfold = 10,
+  nrep = 10,
+  degree = c(1:5),
+  coef0 = c(-10, -1, 0, 1, 10),
+  cost = c(0.5, 1, 3, 10, 20), 
+  epsilon = c(0.01, 0.1, 0.5, 0.9), 
+  gamma = c(0.001, 0.01, 0.1, 0.25, 0.5)
+)
+
+padel_rfe_save <- lapply(
+  data_name, 
+  function(x) {
+    saveRDS(padel_rfe[[x]], paste0("model/svm_polynomial/rfe_var/padel/", x, ".RDS"))
+  }
+)
+
+clusterSetRNGStream(cl = cl, 20210722)
+mordred_rfe <- parLapply(
+  cl = cl,
+  mordred_list_rfe, 
+  tune, 
+  method = "svm_polynomial", 
+  resp = "dG",
+  ignore_col = "guest",
+  nfold = 10,
+  nrep = 10,
+  degree = c(1:5),
+  coef0 = c(-10, -1, 0, 1, 10),
+  cost = c(0.5, 1, 3, 10, 20), 
+  epsilon = c(0.01, 0.1, 0.5, 0.9), 
+  gamma = c(0.001, 0.01, 0.1, 0.25, 0.5)
+)
+
+mordred_rfe_save <- lapply(
+  data_name, 
+  function(x) {
+    saveRDS(mordred_rfe[[x]], paste0("model/svm_polynomial/rfe_var/mordred/", x, ".RDS"))
+  }
+)
+
+clusterSetRNGStream(cl = cl, 20210722)
+ochem_rfe <- parLapply(
+  cl = cl,
+  ochem_list_rfe, 
+  tune, 
+  method = "svm_polynomial", 
+  resp = "dG",
+  ignore_col = "guest",
+  nfold = 10,
+  nrep = 10,
+  degree = c(1:5),
+  coef0 = c(-10, -1, 0, 1, 10),
+  cost = c(0.5, 1, 3, 10, 20), 
+  epsilon = c(0.01, 0.1, 0.5, 0.9), 
+  gamma = c(0.001, 0.01, 0.1, 0.25, 0.5)
+)
+
+ochem_rfe_save <- lapply(
+  data_name, 
+  function(x) {
+    saveRDS(ochem_rfe[[x]], paste0("model/svm_polynomial/rfe_var/ochem/", x, ".RDS"))
+  }
+)
+stopCluster(cl = cl)
+```
+
+### Radial basis function
+
+#### All Variables
+
+```{r}
+
+```
+
+#### RFE
+
+```{r}
+
+```
+
+## External validation
+
+```{r}
+desc_name <- c("cdk", "mordred", "ochem", "padel")
+data_name <- str_remove(list.files("desc/cdk"), "\\.RDS$")
+```
+
+First, the data generated from Step 07 is read into a list.
+
+```{r}
+ev_list <- lapply(
+  paste0("extval_pp/", desc_name), 
+  function(x) {
+    lapply(
+      list.files(x, full.names = T), 
+      readRDS
+    ) %>%
+      setNames(nm = data_name)
+  }
+) %>%
+  setNames(nm = desc_name)
+```
+
+External validation follows the same steps as described in `10-rf.Rmd`. 
+
+### Linear SVMs
+
+#### All Variables
+
+The results on external validation for linear SVMs can be predicted. Performance on all molecules and performance on the applicability domain can be contrasted.
+
+```{r}
+svm_polynomial_allvar <- lapply(
+  paste0("model/svm_polynomial/all_var/", desc_name), 
+  function(x) {
+    lapply(
+      list.files(x, full.names = T), 
+      readRDS
+    ) %>%
+      setNames(nm = data_name)
+  }
+) %>%
+  setNames(nm = desc_name)
+```
+
+```{r}
+ev_allvar <- lapply(
+  desc_name, 
+  function(x) {
+    tune_sublist <- svm_polynomial_allvar[[x]]
+    ev_sublist <- ev_list[[x]]
+    lapply(
+      data_name, 
+      function(y) {
+        pred <- predict(tune_sublist[[y]], ev_sublist[[y]])
+        data.frame(
+          guest = ev_sublist[[y]]$guest, 
+          in_ad = ev_sublist[[y]]$in_ad,
+          obs = ev_sublist[[y]]$dG, 
+          pred = pred
+        )
+      }
+    ) %>%
+      setNames(data_name)
+  }
+) %>% 
+  setNames(desc_name)
+
+# All results, regardless of applicability domain
+ev_allvar_result <- lapply(
+  ev_allvar, 
+  function(x) {
+    lapply(
+      x, 
+      defaultSummary
+    ) %>%
+      setNames(data_name)
+  }
+) %>%
+  setNames(desc_name)
+
+# Accuracy only on applicability domain
+ev_allvar_result_ad <- lapply(
+  ev_allvar, 
+  function(x) {
+    lapply(
+      x, 
+      function(y) {
+        y <- y[y$in_ad, ]
+        defaultSummary(y)
+      }
+    ) %>%
+      setNames(data_name)
+  }
+) %>% 
+  setNames(desc_name)
+```
+
+#### RFE
+
+The same procedure for prediction is carried out with models only built on variables selected with RFE. 
+
+```{r}
+svm_polynomial_rfe <- lapply(
+  paste0("model/svm_polynomial/rfe_var/", desc_name), 
+  function(x) {
+    lapply(
+      list.files(x, full.names = T), 
+      readRDS
+    ) %>%
+      setNames(nm = data_name)
+  }
+) %>%
+  setNames(nm = desc_name)
+
+ev_rfe <- lapply(
+  desc_name, 
+  function(x) {
+    tune_sublist <- svm_polynomial_rfe[[x]]
+    ev_sublist <- ev_list[[x]]
+    lapply(
+      data_name, 
+      function(y) {
+        pred <- predict(tune_sublist[[y]], ev_sublist[[y]])
+        data.frame(
+          guest = ev_sublist[[y]]$guest, 
+          in_ad = ev_sublist[[y]]$in_ad,
+          obs = ev_sublist[[y]]$dG, 
+          pred = pred
+        )
+      }
+    ) %>%
+      setNames(data_name)
+  }
+) %>% 
+  setNames(desc_name)
+
+# All results, regardless of applicability domain
+ev_rfe_result <- lapply(
+  ev_rfe, 
+  function(x) {
+    lapply(
+      x, 
+      defaultSummary
+    ) %>%
+      setNames(data_name)
+  }
+) %>%
+  setNames(desc_name)
+
+# Accuracy only on applicability domain
+ev_rfe_result_ad <- lapply(
+  ev_rfe, 
+  function(x) {
+    lapply(
+      x, 
+      function(y) {
+        y <- y[y$in_ad, ]
+        defaultSummary(y)
+      }
+    ) %>%
+      setNames(data_name)
+  }
+) %>% 
+  setNames(desc_name)
+```
+
+## Polynomial SVM
+
+
+
+## Results
+
+### Model-building process
+
+The results are first read from the lists generated from tuning and saved in the
+directory `result/trn/`.
+
+```{r}
+svm_polynomial_allvar_df <- rbindlist(
+  lapply(
+    desc_name, 
+    function(x) {
+      desc_list <- svm_polynomial_allvar[[x]]
+      rbindlist(
+        lapply(
+          data_name, 
+          function(y) {
+            mutate(desc_list[[y]]$result_summary, data_src = y)
+          }
+        )
+      ) %>%
+        mutate(desc_src = x)
+    }
+  )
+) 
+
+svm_polynomial_rfe_df <- rbindlist(
+  lapply(
+    desc_name, 
+    function(x) {
+      desc_list <- svm_polynomial_rfe[[x]]
+      rbindlist(
+        lapply(
+          data_name, 
+          function(y) {
+            mutate(desc_list[[y]]$result_summary, data_src = y)
+          }
+        )
+      ) %>%
+        mutate(desc_src = x)
+    }
+  )
+) 
+
+saveRDS(svm_polynomial_allvar_df, "result/trn/all_var/rf.RDS")
+saveRDS(svm_polynomial_rfe_df, "result/trn/rfe_var/rf.RDS")
+```
+
+```{r, eval = T, echo = F}
+svm_polynomial_allvar_df <- readRDS("result/trn/all_var/rf.RDS")
+svm_polynomial_rfe_df <- readRDS("result/trn/rfe_var/rf.RDS")
+
+ggplot(svm_polynomial_allvar_df, aes(x = data_src, y = fold_avg, fill = desc_src)) + 
+  geom_col(position = "dodge") + 
+  facet_grid(summary_stat ~ ., scales = "free") + 
+  labs(
+    x = "Data source", 
+    y = "Average value over repeated 10-fold CV", 
+    title = "Results for random forest models on all variables", 
+    fill = "Chemical descriptor"
+  )
+
+ggplot(svm_polynomial_rfe_df, aes(x = data_src, y = fold_avg, fill = desc_src)) + 
+  geom_col(position = "dodge") + 
+  facet_grid(summary_stat ~ ., scales = "free") + 
+  labs(
+    x = "Data source", 
+    y = "Average value over repeated 10-fold CV", 
+    title = "Results for random forest models on RFE-selected variables", 
+    fill = "Chemical descriptor"
+  )
+```
+
+### External validation 
+
+```{r}
+ev_allvar_df <- data.table::rbindlist(
+  lapply(
+    unlist(ev_allvar_result, recursive = F), 
+    function(x) {
+      data.frame(as.list(x))
+    }
+  )
+) %>%
+  data.frame(
+    desc_src = unlist(lapply(desc_name, rep, length(data_name))), 
+    data_src = rep(data_name, length(desc_name))
+  ) %>%
+  pivot_longer(RMSE:MAE, names_to = "summary_stat")
+
+ev_allvar_ad_df <- data.table::rbindlist(
+  lapply(
+    unlist(ev_allvar_result_ad, recursive = F), 
+    function(x) {
+      data.frame(as.list(x))
+    }
+  )
+) %>%
+  data.frame(
+    desc_src = unlist(lapply(desc_name, rep, length(data_name))), 
+    data_src = rep(data_name, length(desc_name))
+  ) %>%
+  pivot_longer(RMSE:MAE, names_to = "summary_stat")
+
+ggplot(ev_allvar_df, aes(x = data_src, y = value, fill = desc_src)) + 
+  geom_col(position = "dodge") + 
+  facet_grid(summary_stat ~ ., scales = "free")
+
+ggplot(ev_allvar_ad_df, aes(x = data_src, y = value, fill = desc_src)) + 
+  geom_col(position = "dodge") + 
+  facet_grid(summary_stat ~ ., scales = "free")
+# svm_polynomial_tst <- svm_polynomial_allvar[[1]]
+# ev_tst <- ev_list[[1]]
+# pred_tst <- lapply(
+#   names(svm_polynomial_tst), 
+#   function(x) {
+#     # svm_polynomial_model <- svm_polynomial_tst[[x]]$model
+#     # predict(svm_polynomial_model, ev_tst[[x]])
+#     predict(svm_polynomial_tst[[x]], ev_tst[[x]])
+#   }
+# )
+```
+
+```{r}
+print.tune <- function(tune_obj) {
+  cat(
+    "Model type: ", class(tune_obj$model), "\n\n",
+    "Tuned parameters: ", "\n",
+    sapply(
+      names(tune_obj$param),
+      function(x) {
+        paste0("\t", x, ": ", tune_obj$param[[x]], "\n")
+      }
+    ), "\n",
+    "Number of predictors: ", length(tune_obj$pred_name), "\n",
+    "Predictors (first 10): ",
+    tune_obj$pred_name[1:(min(10, length(tune_obj$pred_name)))],
+    "\n", "\n",
+    "Model performance: ", "\n"
+  )
+  print(tune_obj$result_summary)
+}
+
+predict.tune <- function(tune_obj, ...) {
+  # if (length(class(tune_obj$model)) > 1) {
+  #   class(tune_obj$model) <-
+  #     class(tune_obj$model)[length(class(tune_obj$model))]
+  # }
+  # best_model <- tune_obj$model
+  # UseMethod("predict", best_model)
+  predict(tune_obj$model, ...)
+}
+```
+
