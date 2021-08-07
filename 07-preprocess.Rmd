@@ -25,10 +25,10 @@ Because this step is time-consuming, the default action for the chunks has been 
 desc_name <- c("cdk", "mordred", "ochem", "padel")
 pp_dir <- paste0("preprocess/", desc_name) 
 ad_dir <- paste0("ad/", desc_name)
-if (!dir.exists("preprocess")) dir.create("preprocess")
-if (!dir.exists(pp_dir[1])) lapply(pp_dir, dir.create)
-if (!dir.exists("ad")) dir.create("ad")
-if (!dir.exists(ad_dir[1])) lapply(ad_dir, dir.create)
+if (!dir.exists("preprocess")) dir_create("preprocess")
+if (!dir.exists(pp_dir[1])) lapply(pp_dir, dir_create)
+if (!dir.exists("ad")) dir_create("ad")
+if (!dir.exists(ad_dir[1])) lapply(ad_dir, dir_create)
 ```
 
 ## Dependencies
@@ -161,7 +161,7 @@ trn_list <- lapply(
     read_desc_list(fnames, quiet = T)
   }
 )
-  
+  # Code hangs for a long time in line 194-199
 # renaming names to be descriptor specific
 trn_list <- Map(
   function(df_list, desc_name) {
@@ -252,8 +252,8 @@ desc_name <- c("cdk", "mordred", "ochem", "padel")
 data_name <- str_remove(list.files("desc/cdk"), "\\.RDS$")
 evpp_dir <- paste0("extval_pp/", desc_name)
 ev_dir <- paste0("extval/", desc_name)
-if (!dir.exists("extval_pp")) dir.create("extval_pp")
-if (!dir.exists(ev_dir[1])) lapply(evpp_dir, dir.create)
+if (!dir.exists("extval_pp")) dir_create("extval_pp")
+if (!dir.exists(ev_dir[1])) lapply(evpp_dir, dir_create)
 ```
 
 ### Determining molecules outside applicability domain
@@ -290,7 +290,7 @@ ev_list <- lapply(
   }
 ) %>%
   setNames(nm = desc_name)
-
+# Error 
 evpp_list <- lapply(
   desc_name, 
   function(x) {
@@ -309,6 +309,7 @@ evpp_list <- lapply(
   }
 ) %>% 
   setNames(desc_name)
+# Error: Problem with `mutate()` column `in_ad`. ℹ `in_ad = predict(ad_sublist[[y]], ev_sublist[[y]])`. x no applicable method for 'predict' applied to an object of class "ad" Run `rlang::last_error()` to see where the error occurred.
 ```
 
 After creating the boolean column for the applicability domain, the data can be

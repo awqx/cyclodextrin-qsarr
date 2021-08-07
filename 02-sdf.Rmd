@@ -26,13 +26,13 @@ dir_list2 <- paste0(
   unlist(lapply(cd_list, rep, 4)))
 
 if (!dir.exists("sdf")) {
-  dir.create("sdf")
-  lapply(dir_list1, dir.create)
-  dir.create("sdf/result")
+  dir_create("sdf")
+  lapply(dir_list1, dir_create)
+  dir_create("sdf/result")
 }
 
 if (!dir.exists(dir_list2[1])) {
-  lapply(dir_list2, dir.create)
+  lapply(dir_list2, dir_create)
 }
 ```
 
@@ -61,7 +61,6 @@ library(stringr)
 This is not necessary for the code to run, but to time the downloading, the library `tictoc` can be used.
 
 ```{r dependency_tictoc}
-install.packages("tictoc")
 library(tictoc)
 ```
 
@@ -198,7 +197,7 @@ cat(
 For certain applications, like the `rcdk` package, it is convenient to have SDFs compiled into a single SDF. The functions `qsarr::combine_sdf` and `qsarr::write_sdf` can accomplish this. These files will be saved in `sdf/compiled`.
 
 ```{r combine_sdf, eval = T}
-if (!dir.exists("sdf/combined")) dir.create("sdf/combined")
+if (!dir.exists("sdf/combined")) dir_create("sdf/combined")
 
 # Recall that dir_list2 holds the directories for where
 # all the SDFs are saved
@@ -229,7 +228,7 @@ mapply(
 Certain names in the SDFs may be problematic later due to non-ASCII characters or commas. A separate directory of molecules without names will be created to address this (`sdf/no_name`). The names will be stored as an RDS file in this directory. 
 
 ```{r combine_noname}
-if (!dir.exists("sdf/no_name")) dir.create("sdf/no_name")
+if (!dir.exists("sdf/no_name")) dir_create("sdf/no_name")
 
 # Recall that dir_list2 holds the directories for where
 # all the SDFs are saved

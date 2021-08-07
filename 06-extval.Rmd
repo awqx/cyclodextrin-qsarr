@@ -16,16 +16,16 @@ According to QSAR best practices [^1], models should be tested on external valid
 For each file of descriptors, 15% of the data will be set aside for external validation. External validation sets will be saved in the directory `extval/`. The sets used in model evaluation will be in the directory `trn/`. The directory structure of both of these directories will mirror that of `desc/` or `join/`. 
 
 ```{r dir_create}
-if (!dir.exists("extval")) dir.create("extval")
-if (!dir.exists("trn")) dir.create("trn")
+if (!dir.exists("extval")) dir_create("extval")
+if (!dir.exists("trn")) dir_create("trn")
 
 # Create appropriate directories
 trn_dir <- paste0("trn/", list.files("desc", include.dirs = T))
 extval_dir <- paste0("extval/", list.files("desc", include.dirs = T))
 
 if (!dir.exists(trn_dir[1])) {
-  lapply(trn_dir, dir.create)
-  lapply(extval_dir, dir.create)
+  lapply(trn_dir, dir_create)
+  lapply(extval_dir, dir_create)
 }
 ```
 

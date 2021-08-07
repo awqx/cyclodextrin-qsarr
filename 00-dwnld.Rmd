@@ -17,25 +17,30 @@ This step will download observations of binding affinity with cyclodextrin and p
 
 ## Dependencies
 
-There are several personal functions used throughout this project. They can be found and installed through GitHub using `devtools::install_github`.
+There are several personal functions used throughout this project. They can be found and installed through GitHub using `devtools::install_github`. rJava and its installation will
+be OS dependent. ^[footnote for help]
 
-```{r qsarr}
-if (!require("devtools")) install.packages("devtools")
-devtools::install_github("awqx/qsarr")
+```{r dependencies}
+if(!require("renv")) install.packages("renv")
+renv::restore()
 library(qsarr)
+library(tabulizer)
+library(dplyr)
+library(httr)
+library(stringr)
+library(XML)
+library(data.table)
+library(fs)
 ```
 
-This step requires the packages `data.table`, `dplyr`, `httr`, `stringr`, `tabulizer`, and `XML`.
 
 Raw data will be stored in `affinity/raw`. Data that has been cast into an R data frame but whose contents are unaltered will be in `affinity/derived`. 
 
+
 ```{r packages, message = F, warning = F, results = "hide"}
-packages <- c("data.table", "dplyr", "httr", "stringr", "tabulizer", "XML")
-# mapply(install.packages, packages)
-lapply(packages, library, character.only = T)
-if (!dir.exists("affinity/")) dir.create("affinity/")
-if (!dir.exists("affinity/raw")) dir.create("affinity/raw")
-if (!dir.exists("affinity/derived")) dir.create("affinity/derived")
+if (!dir.exists("affinity/")) dir_create("affinity/")
+if (!dir.exists("affinity/raw")) dir_create("affinity/raw")
+if (!dir.exists("affinity/derived")) dir_create("affinity/derived")
 ```
 
 ## Data source

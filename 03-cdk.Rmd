@@ -18,7 +18,7 @@ The package `rcdk` links the Java library CDK (Chemistry Development Kit) to R. 
 Descriptors will be saved in the directory `desc`. File names will be symmetric with file names for combined SDFs, 
 
 ```{r desc_dir, message = F, eval = T}
-if (!dir.exists("desc")) dir.create("desc")
+if (!dir.exists("desc")) dir_create("desc")
 ```
 
 ## Dependencies
@@ -26,10 +26,7 @@ if (!dir.exists("desc")) dir.create("desc")
 The package `rcdk` is required here. This will automatically load `rJava` as well. 
 
 ```{r pkg, message = F, eval = T}
-if (!require("rcdk")) {
-  install.packages("rcdk")
-  library(rcdk)
-}
+library(rcdk)
 ```
 
 ## Loading molecules
@@ -93,7 +90,7 @@ desc_df <- Map(
 We can then save the data frames of descriptors in `desc/cdk`. The descriptors are saved in a subfolder because we may incorporate other descriptor sources later (e.g., PaDEL-descriptor) 
 
 ```{r save_desc}
-if (!dir.exists("desc/cdk")) dir.create("desc/cdk")
+if (!dir.exists("desc/cdk")) dir_create("desc/cdk")
 desc_name <- paste0("desc/cdk/", names(desc_df), ".RDS")
 save_result <- mapply(
   function(x, y) saveRDS(x, y), 

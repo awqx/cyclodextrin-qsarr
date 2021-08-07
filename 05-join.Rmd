@@ -17,7 +17,7 @@ The binding affinity in the `affinity` data will be joined to the chemical descr
 src_list <- c("cdk", "mordred", "ochem", "padel")
 dir_list <- paste0("join/", src_list)
 if (!dir.exists("join")) {
-  dir_result <- lapply(c("join", dir_list), dir.create)
+  dir_result <- lapply(c("join", dir_list), dir_create)
 }
 ```
 
