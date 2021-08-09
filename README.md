@@ -117,13 +117,23 @@ File: [`09-rfe.Rmd`](09-rfe.html)
 - `"rfe"` objects saved in `rfe/`
 - Variables saved in `rfe_var/`
 
-### 10. Random forest
+### 10. Random forest (RF)
 
 File: [`10-rf.Rmd`](10-rf.html)
 
 - Random forest model built
 - Tuning for two sets of variables: full variable set and selected variables
 - Results from 10 repeats of 10-fold cross-validation
+
+### 11. Support Vector Machine (SVM)
+
+#### a. Linear Kernel
+
+File: [`11a-svm_linear.Rmd`](11a-svm_linear.html)
+
+- Built support vector machine (SVM) using the linear kernel
+- SVMs take a relatively long time to tune due to the number of available variables
+
 
 ## Notes on workflow
 

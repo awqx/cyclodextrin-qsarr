@@ -91,31 +91,29 @@ cl <- makeCluster(num_core)
 registerDoParallel(cl)
 cl_lib <- clusterEvalQ(cl, library("qsarr"))
 
-# clusterSetRNGStream(cl = cl, 20210723)
-# cdk_all <- parLapply(
-#   cl = cl,
-#   cdk_list, 
-#   tune, 
-#   method = "svm_polynomial", 
-#   resp = "dG",
-#   ignore_col = "guest",
-#   nfold = 10,
-#   nrep = 10,
-#   degree = c(1:5),
-#   coef0 = c(-10, -1, 0, 1, 10),
-#   cost = c(0.5, 1, 3, 10, 20), 
-#   epsilon = c(0.01, 0.1, 0.5, 0.9), 
-#   gamma = c(0.001, 0.01, 0.1, 0.25, 0.5)
-# )
-# 
-# cdk_all_save <- lapply(
-#   data_name, 
-#   function(x) {
-#     saveRDS(cdk_all[[x]], paste0("model/svm_polynomial/all_var/cdk/", x, ".RDS"))
-#   }
-# )
+clusterSetRNGStream(cl = cl, 20210807)
+cdk_all <- parLapply(
+  cl = cl,
+  cdk_list,
+  tune,
+  method = "svm_polynomial",
+  resp = "dG",
+  ignore_col = "guest",
+  nfold = 10,
+  nrep = 10,
+  degree = c(1:5),
+  coef0 = c(-10, -1, 0, 1, 10),
+  cost = c(0.5, 1, 3, 10, 20)
+)
 
-clusterSetRNGStream(cl = cl, 20210723)
+cdk_all_save <- lapply(
+  data_name,
+  function(x) {
+    saveRDS(cdk_all[[x]], paste0("model/svm_polynomial/all_var/cdk/", x, ".RDS"))
+  }
+)
+
+clusterSetRNGStream(cl = cl, 20210807)
 padel_all <- parLapply(
   cl = cl,
   padel_list, 
@@ -127,9 +125,7 @@ padel_all <- parLapply(
   nrep = 10,
   degree = c(1:5),
   coef0 = c(-10, -1, 0, 1, 10),
-  cost = c(0.5, 1, 3, 10, 20), 
-  epsilon = c(0.01, 0.1, 0.5, 0.9), 
-  gamma = c(0.001, 0.01, 0.1, 0.25, 0.5)
+  cost = c(0.5, 1, 3, 10, 20)
 )
 
 padel_all_save <- lapply(
@@ -139,7 +135,7 @@ padel_all_save <- lapply(
   }
 )
 
-clusterSetRNGStream(cl = cl, 20210723)
+clusterSetRNGStream(cl = cl, 20210807)
 mordred_all <- parLapply(
   cl = cl,
   mordred_list, 
@@ -151,9 +147,7 @@ mordred_all <- parLapply(
   nrep = 10,
   degree = c(1:5),
   coef0 = c(-10, -1, 0, 1, 10),
-  cost = c(0.5, 1, 3, 10, 20), 
-  epsilon = c(0.01, 0.1, 0.5, 0.9), 
-  gamma = c(0.001, 0.01, 0.1, 0.25, 0.5)
+  cost = c(0.5, 1, 3, 10, 20)
 )
 
 mordred_all_save <- lapply(
@@ -163,7 +157,7 @@ mordred_all_save <- lapply(
   }
 )
 
-clusterSetRNGStream(cl = cl, 20210723)
+clusterSetRNGStream(cl = cl, 20210807)
 ochem_all <- parLapply(
   cl = cl,
   ochem_list, 
@@ -175,9 +169,7 @@ ochem_all <- parLapply(
   nrep = 10,
   degree = c(1:5),
   coef0 = c(-10, -1, 0, 1, 10),
-  cost = c(0.5, 1, 3, 10, 20), 
-  epsilon = c(0.01, 0.1, 0.5, 0.9), 
-  gamma = c(0.001, 0.01, 0.1, 0.25, 0.5)
+  cost = c(0.5, 1, 3, 10, 20)
 )
 
 ochem_all_save <- lapply(
@@ -234,8 +226,9 @@ cdk_rfe <- parLapply(
   ignore_col = "guest",
   nfold = 10,
   nrep = 10,
-  cost = c(0.5, 1, 3, 10, 20), 
-  epsilon = c(0.001, 0.01, 0.1, 0.25, 0.5, 0.9)
+  degree = c(1:5),
+  coef0 = c(-10, -1, 0, 1, 10),
+  cost = c(0.5, 1, 3, 10, 20)
 )
 
 cdk_rfe_save <- lapply(
@@ -255,8 +248,9 @@ padel_rfe <- parLapply(
   ignore_col = "guest",
   nfold = 10,
   nrep = 10,
-  cost = c(0.5, 1, 3, 10, 20), 
-  epsilon = c(0.001, 0.01, 0.1, 0.25, 0.5, 0.9)
+  degree = c(1:5),
+  coef0 = c(-10, -1, 0, 1, 10),
+  cost = c(0.5, 1, 3, 10, 20)
 )
 
 padel_rfe_save <- lapply(
@@ -276,8 +270,9 @@ mordred_rfe <- parLapply(
   ignore_col = "guest",
   nfold = 10,
   nrep = 10,
-  cost = c(0.5, 1, 3, 10, 20), 
-  epsilon = c(0.001, 0.01, 0.1, 0.25, 0.5, 0.9)
+  degree = c(1:5),
+  coef0 = c(-10, -1, 0, 1, 10),
+  cost = c(0.5, 1, 3, 10, 20)
 )
 
 mordred_rfe_save <- lapply(
@@ -297,8 +292,9 @@ ochem_rfe <- parLapply(
   ignore_col = "guest",
   nfold = 10,
   nrep = 10,
-  cost = c(0.5, 1, 3, 10, 20), 
-  epsilon = c(0.001, 0.01, 0.1, 0.25, 0.5, 0.9)
+  degree = c(1:5),
+  coef0 = c(-10, -1, 0, 1, 10),
+  cost = c(0.5, 1, 3, 10, 20)
 )
 
 ochem_rfe_save <- lapply(
