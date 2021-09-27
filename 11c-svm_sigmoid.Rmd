@@ -43,54 +43,28 @@ if (!dir.exists("model/svm_sigmoid")) {
 
 ### General outline for model building
 
+Note that these tuning functions are not as deep as would be required for a project that only uses one set of descriptors. To save time, a very broad tuning grid is used (i.e., with sparse values) and not all possible tuning parameters are implemented. 
+
 ## All variables
 
 For creating models with all the variables, the descriptors are read as separate 
 lists. This makes it clearer that different possible tuning parameters are used
 based on the number of descriptors available. 
 
-```{r cdk_all}
-# Read preprocessed descriptors
-# Remove guest names for training
-cdk_list <- read_desc_list(
-  list.files("preprocess/cdk", full.names = T), 
-  quiet = T
-)
+## Sigmoid SVM
 
-padel_list <- read_desc_list(
-  list.files("preprocess/padel", full.names = T), 
-  quiet = T
-)
-
-mordred_list <- read_desc_list(
-  list.files("preprocess/mordred", full.names = T), 
-  quiet = T
-)
-
-ochem_list <- read_desc_list(
-  list.files("preprocess/ochem", full.names = T), 
-  quiet = T
-) 
-
-```
-
-## Polynomial SVM
-
-Because the SVM kernels all have slightly different parameters, `qsarr` handles each kernel through a different `tune` call. It is more straightforward to feed the `tune` function the parameters relevant to each kernel rather than check dependencies on the kernel type. 
-
-This may change in later versions of `qsarr` but is true for v0.1.0.
-
-An SVM with a polynomial kernel draws a linear boundary to explain the data. 
+An SVM with a sigmoid kernel draws a boundary using a `sigmoid` function. It may be better suited for a QSAR than a polynomial kernel because it is less likely to produce extreme values that defy physics. 
 
 ### All Variables
 
 ```{r, eval = F}
+load("data/all_var.Rdata")
 num_core <- max(1, detectCores() - 1)
 cl <- makeCluster(num_core)
 registerDoParallel(cl)
 cl_lib <- clusterEvalQ(cl, library("qsarr"))
 
-clusterSetRNGStream(cl = cl, 20210807)
+
 cdk_all <- parLapply(
   cl = cl,
   cdk_list,
@@ -100,7 +74,7 @@ cdk_all <- parLapply(
   ignore_col = "guest",
   nfold = 10,
   nrep = 10,
-  degree = c(1:5),
+  epsilon = c(0.01, 0.05, 0.1, 0.25, 0.5),
   coef0 = c(-10, -1, 0, 1, 10),
   cost = c(0.5, 1, 3, 10, 20)
 )
@@ -112,7 +86,7 @@ cdk_all_save <- lapply(
   }
 )
 
-clusterSetRNGStream(cl = cl, 20210807)
+clusterSetRNGStream(cl = cl, 20210927)
 padel_all <- parLapply(
   cl = cl,
   padel_list, 
@@ -122,7 +96,7 @@ padel_all <- parLapply(
   ignore_col = "guest",
   nfold = 10,
   nrep = 10,
-  degree = c(1:5),
+  epsilon = c(0.01, 0.05, 0.1, 0.25, 0.5),
   coef0 = c(-10, -1, 0, 1, 10),
   cost = c(0.5, 1, 3, 10, 20)
 )
@@ -134,7 +108,7 @@ padel_all_save <- lapply(
   }
 )
 
-clusterSetRNGStream(cl = cl, 20210807)
+clusterSetRNGStream(cl = cl, 20210927)
 mordred_all <- parLapply(
   cl = cl,
   mordred_list, 
@@ -144,7 +118,7 @@ mordred_all <- parLapply(
   ignore_col = "guest",
   nfold = 10,
   nrep = 10,
-  degree = c(1:5),
+  epsilon = c(0.01, 0.05, 0.1, 0.25, 0.5),
   coef0 = c(-10, -1, 0, 1, 10),
   cost = c(0.5, 1, 3, 10, 20)
 )
@@ -156,7 +130,7 @@ mordred_all_save <- lapply(
   }
 )
 
-clusterSetRNGStream(cl = cl, 20210807)
+clusterSetRNGStream(cl = cl, 20210927)
 ochem_all <- parLapply(
   cl = cl,
   ochem_list, 
@@ -166,7 +140,7 @@ ochem_all <- parLapply(
   ignore_col = "guest",
   nfold = 10,
   nrep = 10,
-  degree = c(1:5),
+  epsilon = c(0.01, 0.05, 0.1, 0.25, 0.5),
   coef0 = c(-10, -1, 0, 1, 10),
   cost = c(0.5, 1, 3, 10, 20)
 )
@@ -177,38 +151,14 @@ ochem_all_save <- lapply(
     saveRDS(ochem_all[[x]], paste0("model/svm_sigmoid/all_var/ochem/", x, ".RDS"))
   }
 )
+
 stopCluster(cl = cl)
 ```
 
 #### RFE
 
-```{r rfe}
-# Read preprocessed descriptors
-# Remove guest names for training
-cdk_list_rfe <- read_desc_list(
-  list.files("rfe/df/cdk", full.names = T), 
-  quiet = T
-)
-
-padel_list_rfe <- read_desc_list(
-  list.files("rfe/df/padel", full.names = T), 
-  quiet = T
-)
-
-mordred_list_rfe <- read_desc_list(
-  list.files("rfe/df/mordred", full.names = T), 
-  quiet = T
-)
-
-ochem_list_rfe <- read_desc_list(
-  list.files("rfe/df/ochem", full.names = T), 
-  quiet = T
-) 
-
-data_name <- names(cdk_list_rfe)
-```
-
 ```{r}
+load("data/rfe.RDS")
 # Parallel processing setup
 num_core <- max(1, detectCores() - 1)
 cl <- makeCluster(num_core)
@@ -225,7 +175,7 @@ cdk_rfe <- parLapply(
   ignore_col = "guest",
   nfold = 10,
   nrep = 10,
-  degree = c(1:5),
+  epsilon = c(0.01, 0.05, 0.1, 0.25, 0.5),
   coef0 = c(-10, -1, 0, 1, 10),
   cost = c(0.5, 1, 3, 10, 20)
 )
@@ -247,7 +197,7 @@ padel_rfe <- parLapply(
   ignore_col = "guest",
   nfold = 10,
   nrep = 10,
-  degree = c(1:5),
+  epsilon = c(0.01, 0.05, 0.1, 0.25, 0.5),
   coef0 = c(-10, -1, 0, 1, 10),
   cost = c(0.5, 1, 3, 10, 20)
 )
@@ -269,7 +219,7 @@ mordred_rfe <- parLapply(
   ignore_col = "guest",
   nfold = 10,
   nrep = 10,
-  degree = c(1:5),
+  epsilon = c(0.01, 0.05, 0.1, 0.25, 0.5),
   coef0 = c(-10, -1, 0, 1, 10),
   cost = c(0.5, 1, 3, 10, 20)
 )
@@ -291,7 +241,7 @@ ochem_rfe <- parLapply(
   ignore_col = "guest",
   nfold = 10,
   nrep = 10,
-  degree = c(1:5),
+  epsilon = c(0.01, 0.05, 0.1, 0.25, 0.5),
   coef0 = c(-10, -1, 0, 1, 10),
   cost = c(0.5, 1, 3, 10, 20)
 )
