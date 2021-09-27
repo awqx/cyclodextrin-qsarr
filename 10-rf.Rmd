@@ -60,6 +60,8 @@ based on the number of descriptors available.
 Previously in step 08 (random forest proof of concept), tuning yielded that 400
 trees was sufficient for training. For a margin of error, 500 trees will be used.
 
+Note that the data read from preprocessing is saved in an `.Rdata` file. This is likely not necessary for most projects, but due to the variety in descriptors used, this saves time in the other model-building examples. The same occurs for data from RFE. 
+
 ```{r cdk_all}
 # Read preprocessed descriptors
 # Remove guest names for training
@@ -85,6 +87,15 @@ ochem_list <- read_desc_list(
 
 data_name <- names(cdk_list)
 
+dir.create("data")
+save(
+  cdk_list, 
+  padel_list, 
+  mordred_list, 
+  ochem_list, 
+  data_name, 
+  file = "data/all_var.Rdata"
+)
 
 # Parallel processing setup
 num_core <- max(1, detectCores() - 1)
@@ -213,6 +224,15 @@ ochem_list_rfe <- read_desc_list(
 
 data_name <- names(cdk_list_rfe)
 
+save(
+  cdk_list_rfe, 
+  padel_list_rfe, 
+  mordred_list_rfe, 
+  ochem_list_rfe,
+  file = "data/rfe.Rdata"
+)
+
+
 set.seed(20210114)
 cdk_rfe <- lapply(
   cdk_list_rfe, 
@@ -315,7 +335,6 @@ data_name <- str_remove(list.files("desc/cdk"), "\\.RDS$")
 #   predict(tune_obj$model, ...)
 # }
 ```
-
 
 First, the data generated from Step 07 is read into a list.
 
@@ -526,6 +545,7 @@ rf_rfe_df <- rbindlist(
 saveRDS(rf_allvar_df, "result/trn/all_var/rf.RDS")
 saveRDS(rf_rfe_df, "result/trn/rfe_var/rf.RDS")
 ```
+
 ```{r, eval = T, echo = F}
 rf_allvar_df <- readRDS("result/trn/all_var/rf.RDS")
 rf_rfe_df <- readRDS("result/trn/rfe_var/rf.RDS")
